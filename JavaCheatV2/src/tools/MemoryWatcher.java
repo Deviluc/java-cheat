@@ -109,8 +109,6 @@ public class MemoryWatcher implements Runnable {
 				List<Integer> changedIndexes = new ArrayList<Integer>();
 				List<Value> valueList = watchList.get(i);
 				
-				int n = 0;
-				
 				for (Value value : valueList) {
 					try {
 						long newValue = readValue(value);
@@ -126,9 +124,8 @@ public class MemoryWatcher implements Runnable {
 					} catch (IOException e) {
 						value.setValue(0);
 						value.setReadable(false);
+						doNotify = true;
 					}
-					
-					n++;
 				}
 				
 				if (doNotify) {

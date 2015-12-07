@@ -130,7 +130,8 @@ public class ProcessPickerWindow {
 			}
 			@Override
 			public void keyTyped(KeyEvent e) {
-				if (e.getKeyCode() == KeyEvent.VK_ENTER && model.getRowCount() == 1) {
+				
+				if (e.getKeyChar() == '\n' ) {
 					window.setProcess((int) model.getValueAt(0, 0));
 					frmSelectProcess.dispose();
 				}

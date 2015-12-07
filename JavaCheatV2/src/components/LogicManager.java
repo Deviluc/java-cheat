@@ -143,6 +143,11 @@ public class LogicManager implements Trigger {
 			throw new IllegalStateException("No process selected!");
 		}
 	}
+	
+	public void resetSearch() {
+		scanCount = 0;
+		searchManager.resetSearch();
+	}
 
 	@Override
 	public void triggerEvent(Event event) {

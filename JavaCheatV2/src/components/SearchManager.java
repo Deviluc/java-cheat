@@ -49,14 +49,9 @@ public class SearchManager {
 	public void resetSearch() {
 		clearDB();
 		
-		if (scanMaps != null) {
-			for (HTreeMap<Long, Object> map : scanMaps) {
-				map.close();
-			}
-		}
-		
 		scanMaps = new ArrayList<HTreeMap<Long, Object>>();
 		scanResultCount = new ArrayList<Integer>();
+		scanCount = 0;
 	}
 	
 	public void startInitialSearch(final int pValueType, final int pSearchType, final List<MemoryRange> pScanRanges, final String... pValues) throws IllegalArgumentException, IOException {

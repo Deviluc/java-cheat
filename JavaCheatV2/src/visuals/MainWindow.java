@@ -15,11 +15,15 @@ import javax.swing.SwingConstants;
 import org.mapdb.HTreeMap;
 
 import components.LogicManager;
+import events.EditEvent;
+import events.TransferEvent;
 import events.UpdateEvent;
 import exceptions.ProcessNotFoundException;
 import interfaces.Event;
 import interfaces.Trigger;
 import libs.Constants;
+import models.Value;
+import visuals.tables.CheatValueTable;
 import visuals.tables.SimpleValueTable;
 
 import javax.swing.JComboBox;
@@ -47,6 +51,7 @@ public class MainWindow implements Trigger {
 	private LogicManager logicManager;
 	
 	private SimpleValueTable valueTable;
+	private CheatValueTable cheatValueTable;
 
 	/**
 	 * Launch the application.
@@ -84,7 +89,7 @@ public class MainWindow implements Trigger {
 		frmJavacheat.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmJavacheat.getContentPane().setLayout(null);
 		
-		valueTable = new SimpleValueTable(logicManager.getMemoryWatcher());
+		valueTable = new SimpleValueTable(logicManager.getMemoryWatcher(), this);
 		valueTable.setBounds(12, 61, 350, 400);
 		frmJavacheat.getContentPane().add(valueTable);
 		
@@ -136,6 +141,12 @@ public class MainWindow implements Trigger {
 		frmJavacheat.getContentPane().add(button);
 		
 		JButton button_1 = new JButton("Reset");
+		button_1.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				logicManager.resetSearch();
+				valueTable.clear();
+			}
+		});
 		button_1.setBounds(503, 196, 117, 25);
 		frmJavacheat.getContentPane().add(button_1);
 		
@@ -204,9 +215,9 @@ public class MainWindow implements Trigger {
 		textField_3.setBounds(513, 352, 75, 15);
 		frmJavacheat.getContentPane().add(textField_3);
 		
-		JScrollPane scrollPane_1 = new JScrollPane();
-		scrollPane_1.setBounds(12, 493, 676, 246);
-		frmJavacheat.getContentPane().add(scrollPane_1);
+		cheatValueTable = new CheatValueTable(logicManager.getMemoryWatcher(), this);
+		cheatValueTable.setBounds(12, 493, 676, 246);
+		frmJavacheat.getContentPane().add(cheatValueTable);
 		
 		JLabel label_8 = new JLabel("Cheat table:");
 		label_8.setFont(new Font("Comic Sans MS", Font.BOLD | Font.ITALIC, 14));
@@ -262,10 +273,13 @@ public class MainWindow implements Trigger {
 	@Override
 	public void triggerEvent(Event event) {
 		if (event.getEventClass() == Constants.EVENT_LOCK) {
+			
 			if (event.getTarget() == Constants.TARGET_COMBOBOX_VALUETYPE) {
 				comboBoxValueType.setEnabled(false);
 			}
+			
 		} else if (event.getEventClass() == Constants.EVENT_UPDATE) {
+			
 			if (event.getTarget() == Constants.TARGET_COMBOBOX_SCANTYPE) {
 				comboBoxScanType.setModel(new DefaultComboBoxModel<String>(logicManager.getScanTypes()));
 			} else if (event.getTarget() == Constants.TARGET_LABEL_PROCESS) {
@@ -275,6 +289,22 @@ public class MainWindow implements Trigger {
 			} else if (event.getTarget() == Constants.TARGET_TABLE_SEARCH_RESULTS) {
 				Object[] updateValues = ((UpdateEvent) event).getUpdateValues();
 				valueTable.applyAddressMap((HTreeMap<Long, Object>) updateValues[0], (int) updateValues[1]);
+			}
+			
+		} else if (event.getEventClass() == Constants.EVENT_TRANSFER) {
+			if (event.getTarget() == Constants.TARGET_TABLE_CHEATS) {
+				Object[] values = ((TransferEvent) event).getData();
+				
+				for (Object value : values) {
+					cheatValueTable.getModel().addValue((Value) value);
+					cheatValueTable.getModel().fireTableDataChanged();
+				}
+			}
+		} else if (event.getEventClass() == Constants.EVENT_EDIT) {
+			if (event.getTarget() == Constants.TARGET_EDIT_CHEAT_VALUE) {
+				EditEvent e = (EditEvent) event;
+				
+				new CheatValueEditWindow(logicManager, this, (Value) e.getModel());
 			}
 		}
 		
