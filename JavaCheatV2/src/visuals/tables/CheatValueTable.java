@@ -5,22 +5,22 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
 import java.util.List;
-
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.table.AbstractTableModel;
-import javax.swing.table.TableColumn;
 import javax.swing.table.TableColumnModel;
-
+import components.CheatValueManager;
 import events.EditEvent;
+import exceptions.ProcessNotFoundException;
+import exceptions.model.DebuggerException;
 import interfaces.Notifiable;
 import interfaces.Trigger;
 import libs.Constants;
 import models.Value;
+import tools.MemoryAccess;
 import tools.MemoryWatcher;
 
 public class CheatValueTable extends JScrollPane  {
@@ -31,12 +31,16 @@ public class CheatValueTable extends JScrollPane  {
 	private static final long serialVersionUID = 5125431986269259739L;
 	private JTable table;
 	private CheatTableModel model;
+	private CheatValueManager manager;
 
-	public CheatValueTable(MemoryWatcher memoryWatch, final Trigger parentComponent)  {
+	public CheatValueTable(final Trigger parentComponent)  {
 		super();
 		
-		model = new CheatTableModel(memoryWatch);
+		manager = new CheatValueManager();
+		model = new CheatTableModel(manager.getValues());
 		table = new JTable(model);
+		
+		manager.setCheatValueTable(this);
 		
 		TableColumnModel columnModel = table.getColumnModel();
 		
@@ -64,6 +68,19 @@ public class CheatValueTable extends JScrollPane  {
 		popupMenu.add(edit);
 	}
 	
+	public void updateTable() {
+		int selectedRow = table.getSelectedRow();
+		model.fireTableDataChanged();
+		if (selectedRow > -1) {
+			table.setRowSelectionInterval(selectedRow, selectedRow);
+		}
+	}
+	
+	public void setMemoryAccess(final MemoryAccess memoryAcess) {
+		manager.setMemoryAccess(memoryAcess);
+		
+	}
+	
 	public CheatTableModel getModel() {
 		return model;
 	}
@@ -87,7 +104,7 @@ public class CheatValueTable extends JScrollPane  {
 	}
 	
 	
-	public class CheatTableModel extends AbstractTableModel implements Notifiable {
+	public class CheatTableModel extends AbstractTableModel {
 		
 		/**
 		 * 
@@ -97,10 +114,9 @@ public class CheatValueTable extends JScrollPane  {
 		private int rowCount;
 		private List<Value> values;
 		
-		public CheatTableModel(MemoryWatcher memoryWatch) {
+		public CheatTableModel(final List<Value> values) {
 			columnNames = new String[] {"Active", "Description", "Address", "Value"};
-			values = new ArrayList<Value>();
-			memoryWatch.registerComponent(this, values);
+			this.values = values;
 		}
 		
 		public void addValue(Value value) {
@@ -168,15 +184,11 @@ public class CheatValueTable extends JScrollPane  {
 			}
 		}
 
-		@Override
-		public void notifyListChanged(List<Integer> indexes) {
-			this.fireTableDataChanged();
-			/*for (int index : indexes) {
-				updateValue(values.get(index));
-			}*/
-			
-		}
+		
 		
 	}
+
+
+	
 
 }

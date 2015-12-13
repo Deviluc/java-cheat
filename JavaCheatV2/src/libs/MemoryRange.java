@@ -238,10 +238,6 @@ public class MemoryRange {
 	 */
 	public String getFile() {
 		
-		if (isHeap || isStack) {
-			return "";
-		}
-		
 		if (file != null) {
 			return file;
 		} else {

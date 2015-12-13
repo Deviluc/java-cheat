@@ -7,19 +7,23 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import debugger.PTraceDebugger;
 import exceptions.ProcessNotFoundException;
+import exceptions.model.DebuggerException;
 
 public class MemoryAccess {
 	
 	private long pid;
 	private RandomAccessFile memory;
+	private PTraceDebugger debugger;
 	
 	/**
 	 * Creates a new MemoryAccess Object using pPID (the process ID) as long.
 	 * @param pPID Process ID as long
 	 * @throws ProcessNotFoundException Thrown if the process with the PID pPID is not running
+	 * @throws DebuggerException 
 	 */
-	public MemoryAccess(long pPID) throws ProcessNotFoundException {
+	public MemoryAccess(long pPID) throws ProcessNotFoundException, DebuggerException {
 		pid = pPID;
 		
 		try {
@@ -27,6 +31,13 @@ public class MemoryAccess {
 		} catch (FileNotFoundException e) {
 			throw new ProcessNotFoundException("The process with id '" + pid + "' could not be found!");
 		}
+		
+		debugger = new PTraceDebugger();
+		debugger.attachTo(pid);
+	}
+	
+	public void closeWriteChannel() throws DebuggerException {
+		debugger.detach();
 	}
 	
 	/**
@@ -64,9 +75,9 @@ public class MemoryAccess {
 	 * @param pAddress Address to write at
 	 * @param pBytes {@link ByteBuffer} to write
 	 * @throws IllegalArgumentException Thrown if the address or buffer is invalid
-	 * @throws IOException Throw if the buffer cannot be written
+	 * @throws DebuggerException Thrown if the buffer cannot be written to memory
 	 */
-	public void write(final long pAddress, final ByteBuffer pBytes) throws IllegalArgumentException, IOException {
+	public void write(final long pAddress, final ByteBuffer pBytes) throws IllegalArgumentException, DebuggerException {
 		
 		if (pAddress <= 0) {
 			throw new IllegalArgumentException("The adress must be greater 0!");
@@ -76,8 +87,11 @@ public class MemoryAccess {
 			throw new IllegalArgumentException("The ByteBuffer is empty!");
 		}
 		
-		memory.seek(pAddress);
-		memory.getChannel().write(pBytes);
+		pBytes.position(0);
+		
+		while (pBytes.hasRemaining()) {
+			debugger.write(pid, pAddress + pBytes.position(), pBytes.get());
+		}
 		
 	}
 

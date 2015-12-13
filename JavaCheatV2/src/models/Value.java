@@ -1,5 +1,11 @@
 package models;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.text.DecimalFormat;
+
+import libs.Constants;
+
 public class Value {
 	
 	private long address;
@@ -51,6 +57,18 @@ public class Value {
 		}
 	}
 	
+	public void setValue(final ByteBuffer buffer) {
+		if (valueType == Constants.BYTE || valueType == Constants.CHAR) {
+			value = (long) buffer.get();
+		} else if (valueType == Constants.SHORT) {
+			value = (long) buffer.getShort();
+		} else if (valueType == Constants.INT) {
+			value = (long) buffer.getInt();
+		} else {
+			value = buffer.getLong();
+		}
+	}
+	
 	public void setValueType(final int valueType) {
 		this.valueType = valueType;
 	}
@@ -60,13 +78,26 @@ public class Value {
 	}
 	
 	public String getFormattedAddress() {
-		return Long.toHexString(address).toUpperCase();
+		
+		if (address <= 0xFFFFFFFF) {
+			return String.format("%08x", address).toUpperCase();
+		}
+		
+		return String.format("%016x", address).toUpperCase();
 	}
 	
 	
 	public String getFormattedValue() {
 		if (formatHex) {
 			return Long.toHexString(value).toLowerCase();
+		}
+		
+		if (valueType == Constants.FLOAT) {
+			return Float.toString(Float.intBitsToFloat((int) value));
+		}
+		
+		if (valueType == Constants.DOUBLE) {
+			return Double.toString(Double.longBitsToDouble(value));
 		}
 		
 		return value + "";
@@ -82,6 +113,25 @@ public class Value {
 	
 	public long getValue() {
 		return value;
+	}
+	
+	public ByteBuffer getValueByteBuffer() {
+		ByteBuffer buffer = ByteBuffer.allocate(Constants.getByteLength(valueType));
+		buffer.order(ByteOrder.nativeOrder());
+		
+		if (valueType == Constants.BYTE || valueType == Constants.CHAR) {
+			buffer.put((byte) value);
+		} else if (valueType == Constants.SHORT) {
+			buffer.putShort((short) value);
+		} else if (valueType == Constants.INT) {
+			buffer.putInt((int) value);
+		} else {
+			buffer.putLong(value);
+		}
+		
+		buffer.position(0);
+		
+		return buffer;
 	}
 	
 	public int getValueType() {

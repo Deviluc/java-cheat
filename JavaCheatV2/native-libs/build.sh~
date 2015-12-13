@@ -1,0 +1,2 @@
+#!/bin/bash
+gcc -o libptrace.so -shared -Wall -g -std=c99 -fPIC -I/usr/lib/jvm/java-7-oracle/include/linux ptrace.c

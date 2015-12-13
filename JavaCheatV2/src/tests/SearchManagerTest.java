@@ -9,6 +9,7 @@ import libs.MemoryRangeFilter;
 
 import org.testng.annotations.Test;
 
+import tools.MemoryAccess;
 import tools.MemoryMap;
 
 import components.SearchManager;
@@ -28,7 +29,7 @@ public class SearchManagerTest {
 		
 		MemoryMap memMap = new MemoryMap(pid);
 		
-		SearchManager manager = new SearchManager(pid);
+		SearchManager manager = new SearchManager(new MemoryAccess(pid));
 		
 		long currentTime = System.currentTimeMillis();
 		
@@ -54,7 +55,7 @@ public class SearchManagerTest {
 		
 		MemoryMap memMap = new MemoryMap(pid);
 		
-		SearchManager manager = new SearchManager(pid);
+		SearchManager manager = new SearchManager(new MemoryAccess(pid));
 		
 		long currentTime = System.currentTimeMillis();
 		

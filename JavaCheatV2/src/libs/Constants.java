@@ -36,6 +36,7 @@ public abstract class Constants {
 	public static int EVENT_LOCK = 1002;
 	public static int EVENT_TRANSFER = 1003;
 	public static int EVENT_EDIT = 1004;
+	public static int EVENT_FILTER = 1005;
 	
 	/**
 	 * Event targets
@@ -48,6 +49,10 @@ public abstract class Constants {
 	public static int TARGET_TABLE_SEARCH_RESULTS = 10006;
 	public static int TARGET_TABLE_CHEATS = 10007;
 	public static int TARGET_EDIT_CHEAT_VALUE = 10008;
+	public static int TARGET_FILTER = 10009;
+	public static int TARGET_FILTER_RESET = 10010;
+	public static int TARGET_FILTER_LIST = 10011;
+	public static int TARGET_TABLE_CHEATS_UPDATE_PID = 10012;
 	
 	
 

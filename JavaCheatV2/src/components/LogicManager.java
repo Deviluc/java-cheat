@@ -9,12 +9,14 @@ import org.testng.internal.ConstructorOrMethod;
 import events.LockEvent;
 import events.UpdateEvent;
 import exceptions.ProcessNotFoundException;
+import exceptions.model.DebuggerException;
 import interfaces.Event;
 import interfaces.Notifiable;
 import interfaces.Trigger;
 import libs.Constants;
 import libs.MemoryRange;
 import libs.MemoryRangeFilter;
+import tools.MemoryAccess;
 import tools.MemoryMap;
 import tools.MemoryWatcher;
 
@@ -30,10 +32,12 @@ public class LogicManager implements Trigger {
 	private int pid;
 	
 	private List<MemoryRangeFilter> memoryRangeFilterList;
+	private List<MemoryRange> selectedMemoryRanges;
 	
 	private SearchManager searchManager;
 	private MemoryWatcher memoryWatcher;
 	private MemoryMap memoryMap;
+	private MemoryAccess memoryAcces;
 	
 	private Trigger parentComponent;
 
@@ -61,15 +65,25 @@ public class LogicManager implements Trigger {
 		scanCount = 0;
 	}
 	
-	public void setPID(final int pid) throws ProcessNotFoundException, IOException {
+	public void setPID(final int pid) throws ProcessNotFoundException, IOException, DebuggerException {
 		this.pid = pid;
 		
-		searchManager = new SearchManager(pid);
-		memoryMap = new MemoryMap((long) pid);
+		if (memoryAcces != null) {
+			memoryAcces.closeWriteChannel();
+		}
 		
+		memoryAcces = new MemoryAccess(pid);
+		
+		searchManager = new SearchManager(memoryAcces);
+		memoryMap = new MemoryMap((long) pid);
 		memoryWatcher.setPID(pid);
 		
 		scanCount = 0;
+		
+		UpdateEvent event = new UpdateEvent(Constants.TARGET_TABLE_CHEATS_UPDATE_PID);
+		event.setUpdateValues(memoryAcces);
+		parentComponent.triggerEvent(event);
+		
 		ready = true;
 	}
 	
@@ -77,8 +91,24 @@ public class LogicManager implements Trigger {
 		this.memoryRangeFilterList = memoryRangeFilterList;
 	}
 	
+	public void setSelectedMemoryRanges(final List<MemoryRange> selectedMemoryRanges) {
+		this.selectedMemoryRanges = selectedMemoryRanges;
+	}
+	
 	public MemoryWatcher getMemoryWatcher() {
 		return memoryWatcher;
+	}
+	
+	public MemoryAccess getMemoryAccess() {
+		return memoryAcces;
+	}
+	
+	public MemoryMap getMemoryMap() throws NullPointerException {
+		if (memoryMap == null) {
+			throw new NullPointerException("No process attached!");
+		}
+		
+		return memoryMap;
 	}
 	
 	public String[] getValueTypes() {
@@ -119,7 +149,12 @@ public class LogicManager implements Trigger {
 	public void search(final int selectedValueType, final int selectedScanType, final String... values) throws IllegalStateException, IllegalArgumentException, IOException {
 		if (ready) {
 			if (scanCount == 0) {
-				searchManager.startInitialSearch(selectedValueType, selectedScanType + 100, memoryMap.getFilteredRanges(memoryRangeFilterList), values);
+				if (selectedMemoryRanges != null) {
+					searchManager.startInitialSearch(selectedValueType, selectedScanType + 100, selectedMemoryRanges, values);
+				} else {
+					searchManager.startInitialSearch(selectedValueType, selectedScanType + 100, memoryMap.getFilteredRanges(memoryRangeFilterList), values);
+				}
+				
 				scanCount++;
 				
 				parentComponent.triggerEvent(new UpdateEvent(Constants.TARGET_COMBOBOX_SCANTYPE));

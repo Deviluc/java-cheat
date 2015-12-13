@@ -3,10 +3,10 @@ package visuals;
 import java.awt.EventQueue;
 
 import javax.swing.JFrame;
-import javax.swing.JScrollPane;
 import javax.swing.JLabel;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JMenu;
 import java.awt.Font;
 import javax.swing.JTextField;
@@ -19,10 +19,14 @@ import events.EditEvent;
 import events.TransferEvent;
 import events.UpdateEvent;
 import exceptions.ProcessNotFoundException;
+import exceptions.model.DebuggerException;
 import interfaces.Event;
 import interfaces.Trigger;
 import libs.Constants;
+import libs.MemoryRange;
+import libs.MemoryRangeFilter;
 import models.Value;
+import tools.MemoryAccess;
 import visuals.tables.CheatValueTable;
 import visuals.tables.SimpleValueTable;
 
@@ -30,6 +34,8 @@ import javax.swing.JComboBox;
 import javax.swing.JButton;
 import javax.swing.DefaultComboBoxModel;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import javax.swing.JProgressBar;
@@ -145,6 +151,7 @@ public class MainWindow implements Trigger {
 			public void actionPerformed(ActionEvent e) {
 				logicManager.resetSearch();
 				valueTable.clear();
+				comboBoxValueType.setEnabled(true);
 			}
 		});
 		button_1.setBounds(503, 196, 117, 25);
@@ -215,7 +222,7 @@ public class MainWindow implements Trigger {
 		textField_3.setBounds(513, 352, 75, 15);
 		frmJavacheat.getContentPane().add(textField_3);
 		
-		cheatValueTable = new CheatValueTable(logicManager.getMemoryWatcher(), this);
+		cheatValueTable = new CheatValueTable(this);
 		cheatValueTable.setBounds(12, 493, 676, 246);
 		frmJavacheat.getContentPane().add(cheatValueTable);
 		
@@ -257,14 +264,30 @@ public class MainWindow implements Trigger {
 		JMenu mnOptions = new JMenu("Options");
 		menuBar.add(mnOptions);
 		
+		final MainWindow mainWindow = this;
+		
 		JMenuItem mntmScanRanges = new JMenuItem("Scan ranges");
+		mntmScanRanges.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				try {
+					new MemoryRangesWindow(logicManager.getMemoryMap(), mainWindow).setVisible(true);
+				} catch (IOException | NullPointerException ex) {
+					new JOptionPane(ex.getMessage()).setVisible(true);
+					JOptionPane.showMessageDialog(frmJavacheat,
+						    ex.getMessage(),
+						    "Error",
+						    JOptionPane.ERROR_MESSAGE);
+					//ex.printStackTrace();
+				}
+			}
+		});
 		mnOptions.add(mntmScanRanges);
 	}
 	
 	public void setProcess(final int pid) {
 		try {
 			logicManager.setPID(pid);
-		} catch (ProcessNotFoundException | IOException e) {
+		} catch (ProcessNotFoundException | IOException | DebuggerException e) {
 			e.printStackTrace();
 		}
 	}
@@ -289,16 +312,28 @@ public class MainWindow implements Trigger {
 			} else if (event.getTarget() == Constants.TARGET_TABLE_SEARCH_RESULTS) {
 				Object[] updateValues = ((UpdateEvent) event).getUpdateValues();
 				valueTable.applyAddressMap((HTreeMap<Long, Object>) updateValues[0], (int) updateValues[1]);
+			} else if (event.getTarget() == Constants.TARGET_TABLE_CHEATS_UPDATE_PID) {
+				cheatValueTable.setMemoryAccess((MemoryAccess) ((UpdateEvent) event).getUpdateValues()[0]);
 			}
 			
 		} else if (event.getEventClass() == Constants.EVENT_TRANSFER) {
+			TransferEvent eventTransfer = (TransferEvent) event;
 			if (event.getTarget() == Constants.TARGET_TABLE_CHEATS) {
-				Object[] values = ((TransferEvent) event).getData();
+				Object[] values = (eventTransfer.getData());
 				
 				for (Object value : values) {
 					cheatValueTable.getModel().addValue((Value) value);
 					cheatValueTable.getModel().fireTableDataChanged();
 				}
+			} else if (event.getTarget() == Constants.TARGET_FILTER_LIST) {
+				Object[] values = eventTransfer.getData();
+				List<MemoryRange> memoryRanges = new ArrayList<MemoryRange>();
+				
+				for (Object value : values) {
+					memoryRanges.add((MemoryRange) value);
+				}
+				
+				logicManager.setSelectedMemoryRanges(memoryRanges);
 			}
 		} else if (event.getEventClass() == Constants.EVENT_EDIT) {
 			if (event.getTarget() == Constants.TARGET_EDIT_CHEAT_VALUE) {

@@ -7,10 +7,23 @@ public class TransferEvent implements Event {
 	
 	private int target;
 	private Object[] data;
+	
+	@SuppressWarnings("rawtypes")
+	private Class dataClass;
 
 	public TransferEvent(final int target, final Object... data) {
 		this.target = target;
 		this.data = data;
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public void setDataClass(Class dataClass) {
+		this.dataClass = dataClass;
+	}
+	
+	@SuppressWarnings("rawtypes")
+	public Class getDataClass() {
+		return dataClass;
 	}
 	
 

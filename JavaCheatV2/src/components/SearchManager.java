@@ -17,14 +17,12 @@ import tools.MemoryAccess;
 
 import comparision.Comparator;
 import exceptions.ProcessNotFoundException;
-
+import exceptions.model.DebuggerException;
 import libs.Constants;
 import libs.MemoryRange;
 import models.Value;
 
 public class SearchManager {
-	
-	private int pid;
 	private MemoryAccess memory;
 	private Properties searchProps;
 	private DB db;
@@ -36,11 +34,10 @@ public class SearchManager {
 	private List<Integer> scanResultCount;
 	
 
-	public SearchManager(final int pPID) throws ProcessNotFoundException, IOException {
-		pid = pPID;
+	public SearchManager(final MemoryAccess memoryAcces) throws ProcessNotFoundException, IOException, DebuggerException {
 		db = DBMaker.newFileDB(new File("/tmp/javacheat-db")).closeOnJvmShutdown().make();
 		
-		memory = new MemoryAccess(pid);
+		memory = memoryAcces;
 		
 		searchProps = new PropertyManager().getSearchProperties();
 		scanResultCount = new ArrayList<Integer>();
