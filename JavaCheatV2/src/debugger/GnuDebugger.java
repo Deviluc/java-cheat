@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
+import exceptions.model.DebuggerException;
+
 public class GnuDebugger {
 	
 	private Process gdb;
@@ -18,6 +20,7 @@ public class GnuDebugger {
 	private OutputStream processOutputStream;
 	private BufferedWriter outputWriter;
 	private Thread gdbThread;
+	private Error lastError;
 	
 	private boolean attached, showOutput, processing, success, running, working;
 	
@@ -79,6 +82,12 @@ public class GnuDebugger {
 			
 			//TODO parse results
 		}
+		
+		if (result.startsWith("^error")) {
+			lastError = new Error(result.substring(result.lastIndexOf("=")).replace("\"", ""));
+			processing = false;
+			success = false;
+		}
 	}
 	
 	
@@ -127,6 +136,10 @@ public class GnuDebugger {
 			for (String line : informationList) {
 				System.out.println(line.replace("\\n", ""));
 			}
+		}
+		
+		if (!success) {
+			throw lastError;
 		}
 		
 		return success;
